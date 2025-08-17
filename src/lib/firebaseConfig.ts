@@ -15,7 +15,7 @@ import {
   getDocs, 
   Timestamp, 
   doc, 
-  updateDoc,
+  setDoc,
   deleteDoc,
   getDoc,
   orderBy,
@@ -81,12 +81,15 @@ export interface BaseTransaction {
   amount: number;
   date: Date | { seconds: number; nanoseconds: number };
   note?: string;
-  createdAt?: { seconds: number; nanoseconds: number };
-  updatedAt?: { seconds: number; nanoseconds: number };
+  category?: string;
+  userId?: string;
+  createdAt?: { seconds: number; nanoseconds: number } | Date;
+  updatedAt?: { seconds: number; nanoseconds: number } | Date;
 }
 
 export interface Income extends BaseTransaction {
   type: 'income';
+  category: 'salary' | 'bonus' | 'investment' | 'other';
 }
 
 export interface Expense extends BaseTransaction {
@@ -107,7 +110,22 @@ type Transaction = Income | Expense | Debt;
 export const signInWithGoogle = async (): Promise<FirebaseUser> => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    const { user } = result;
+    
+    // Save/update user data in Firestore
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      const userData = {
+        displayName: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+        lastLogin: Timestamp.now()
+      };
+      
+await setDoc(userRef, userData, { merge: true });
+    }
+    
+    return user;
   } catch (error) {
     console.error('Error signing in with Google:', error);
     throw error;
@@ -131,12 +149,13 @@ const getCollectionRef = (userId: string, type: TransactionType) =>
 export const addTransaction = async <T extends Transaction>(
   userId: string,
   type: TransactionType,
-  data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>
+  data: Omit<T, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
 ): Promise<string> => {
   try {
     const timestamp = Timestamp.now();
     const docRef = await addDoc(getCollectionRef(userId, type), {
       ...data,
+      userId, // Add userId to the document data
       createdAt: timestamp,
       updatedAt: timestamp,
     });
@@ -174,10 +193,10 @@ export const updateTransaction = async <T extends Transaction>(
 ): Promise<void> => {
   try {
     const docRef = doc(db, 'users', userId, type, id);
-    await updateDoc(docRef, {
+    await setDoc(docRef, {
       ...data,
       updatedAt: Timestamp.now(),
-    });
+    }, { merge: true });
   } catch (error) {
     console.error(`Error updating ${type}:`, error);
     throw error;
@@ -283,6 +302,15 @@ export const getUpcomingDebts = async (
     orderByField: 'dueDate',
     orderDirection: 'asc',
     limitCount,
+  });
+  
+  return data;
+};
+
+export const getAllDebts = async (userId: string): Promise<Debt[]> => {
+  const { data } = await getTransactions<Debt>(userId, 'debts', {
+    orderByField: 'dueDate',
+    orderDirection: 'asc',
   });
   
   return data;

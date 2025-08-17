@@ -5,6 +5,7 @@ import {
   logOut, 
   getMonthlyTransactions, 
   getUpcomingDebts, 
+  getAllDebts,
   updateTransaction, 
   type Income, 
   type Expense,
@@ -33,6 +34,7 @@ const Home = () => {
   const [totalDebt, setTotalDebt] = useState(0);
   const [debtToIncomeRatio, setDebtToIncomeRatio] = useState(0);
   const [debts, setDebts] = useState<UIDebt[]>([]);
+  const [allDebts, setAllDebts] = useState<UIDebt[]>([]);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -75,10 +77,11 @@ const Home = () => {
         // Fetch all data in parallel
         if (!user?.uid) return;
         
-        const [incomes, expenses, upcomingDebtsResponse] = await Promise.all([
+        const [incomes, expenses, upcomingDebtsResponse, allDebtsResponse] = await Promise.all([
           getMonthlyTransactions<Income>(user.uid, 'incomes'),
           getMonthlyTransactions<Expense>(user.uid, 'expenses'),
-          getUpcomingDebts(user.uid, 5) // Get next 5 upcoming debts
+          getUpcomingDebts(user.uid, 5), // Get next 5 upcoming debts
+          getAllDebts(user.uid) // Get all debts
         ]);
 
         // Transform Firestore data to match our UI types
@@ -111,20 +114,151 @@ const Home = () => {
             };
           });
 
+        // Log all transactions for debugging
+        console.log('Incomes:', incomes);
+        console.log('Expenses:', expenses);
+        console.log('Debts:', transformedDebts);
+        
         // Calculate totals
         const totalIncome = incomes.reduce((sum: number, income: Income) => sum + income.amount, 0);
         const totalExpense = expenses.reduce((sum: number, expense: Expense) => sum + expense.amount, 0);
-        const currentBalance = totalIncome - totalExpense;
-        const currentTotalDebt = transformedDebts
-          .filter((debt: UIDebt) => !debt.paid)
-          .reduce((sum: number, debt: UIDebt) => sum + debt.amount, 0);
         
-        const ratio = totalIncome > 0 ? (currentTotalDebt / totalIncome) * 100 : 0;
+        // Calculate salary income only for debt-to-income ratio
+        const salaryIncome = incomes
+          .filter((income: Income) => income?.category === 'salary')
+          .reduce((sum: number, income: Income) => sum + income.amount, 0);
+        
+        console.log('Total Income:', totalIncome, 'Salary Income:', salaryIncome, 'Total Expense:', totalExpense);
+        
+        // Calculate balance (income - expenses)
+        let currentBalance = totalIncome - totalExpense;
+        
+        // Calculate total monthly payments for unpaid debts
+        const currentMonthlyDebtPayments = transformedDebts
+          .filter((debt: UIDebt) => !debt.paid)
+          .reduce((sum: number, debt: UIDebt) => {
+            // Use installment amount if available, otherwise use debt amount
+            const monthlyPayment = debt.installmentAmount || (debt.amount / 12); // Default to 1 year if no installment
+            return sum + monthlyPayment;
+          }, 0);
+        
+        // If balance is negative, add 1/12th of the negative balance to monthly payments
+        const effectiveMonthlyDebt = currentBalance < 0 
+          ? currentMonthlyDebtPayments + (Math.abs(currentBalance) / 12)
+          : currentMonthlyDebtPayments;
+        
+        // Ensure balance doesn't go below 0
+        currentBalance = Math.max(0, currentBalance);
+        
+        // Calculate debt-to-income ratio (monthly payments / monthly salary income)
+        let ratio = 0;
+        if (salaryIncome > 0) {
+          ratio = (effectiveMonthlyDebt / salaryIncome) * 100;
+          console.log('Debt-to-Income Calculation:', {
+            salaryIncome,
+            monthlyDebt: effectiveMonthlyDebt,
+            ratio,
+            currentBalance,
+            totalDebt: transformedDebts
+              .filter((debt: UIDebt) => !debt.paid)
+              .reduce((sum: number, debt: UIDebt) => sum + debt.amount, 0)
+          });
+        } else if (effectiveMonthlyDebt > 0) {
+          // If there's debt but no income, set ratio to 100% to indicate critical status
+          ratio = 100;
+          console.log('No income but has debt:', { effectiveMonthlyDebt, ratio });
+        }
 
         setBalance(currentBalance);
-        setTotalDebt(currentTotalDebt);
+        // Still show total debt in the UI, but use monthly payments for the ratio
+        setTotalDebt(transformedDebts
+          .filter((debt: UIDebt) => !debt.paid)
+          .reduce((sum: number, debt: UIDebt) => sum + debt.amount, 0));
         setDebtToIncomeRatio(ratio);
-        setDebts(transformedDebts);
+        // Transform all debts from the response
+        const allDebtsTransformed = allDebtsResponse
+          .filter((debt): debt is FirestoreDebt & { id: string } => Boolean(debt.id))
+          .map(debt => {
+            // Convert Firestore Timestamp to Date if needed
+            let dueDate: Date;
+            if (debt.dueDate instanceof Date) {
+              dueDate = debt.dueDate;
+            } else if (debt.dueDate && typeof debt.dueDate === 'object') {
+              const timestamp = debt.dueDate as Timestamp;
+              dueDate = timestamp instanceof Timestamp 
+                ? timestamp.toDate() 
+                : new Date();
+            } else {
+              dueDate = new Date();
+            }
+            
+            // Create UIDebt object with proper types
+            return {
+              id: debt.id,
+              amount: debt.amount,
+              dueDate: {
+                seconds: Math.floor(dueDate.getTime() / 1000),
+                nanoseconds: 0 // Not used in the UI
+              },
+              paid: Boolean(debt.paid),
+              note: debt.note || '',
+              ...(debt.installmentAmount && { installmentAmount: debt.installmentAmount })
+            } as UIDebt;
+          });
+        
+        // Debug: Log all debts for inspection
+        console.log('All debts:', allDebtsTransformed.map(d => ({
+          id: d.id,
+          amount: d.amount,
+          dueDate: new Date(d.dueDate.seconds * 1000).toISOString(),
+          paid: d.paid,
+          note: d.note
+        })));
+
+        const today = new Date();
+        console.log('Current date:', today.toISOString());
+        
+        // Filter for current month's debts
+        const debtsThisMonth = allDebtsTransformed.filter(debt => {
+          const dueDate = new Date(debt.dueDate.seconds * 1000);
+          
+          // Debug log for each debt being checked
+          console.log(`Checking debt ${debt.id}:`, {
+            dueDate: dueDate.toISOString(),
+            currentMonth: today.getMonth(),
+            dueDateMonth: dueDate.getMonth(),
+            currentYear: today.getFullYear(),
+            dueDateYear: dueDate.getFullYear(),
+            isPaid: debt.paid,
+            isDueThisMonth: dueDate.getMonth() === today.getMonth() && dueDate.getFullYear() === today.getFullYear(),
+            isUpcomingThisMonth: dueDate >= today && dueDate.getMonth() === today.getMonth() && dueDate.getFullYear() === today.getFullYear()
+          });
+          
+          // Check if the debt is due in the current month and year, and not paid
+          const isDueThisMonth = 
+            dueDate.getMonth() === today.getMonth() &&
+            dueDate.getFullYear() === today.getFullYear();
+            
+          // Also include upcoming debts that are due before the end of the current month
+          const isUpcomingThisMonth = 
+            dueDate >= today &&
+            dueDate.getMonth() === today.getMonth() &&
+            dueDate.getFullYear() === today.getFullYear();
+            
+          return (isDueThisMonth || isUpcomingThisMonth) && !debt.paid;
+        });
+        
+        console.log('Filtered debts this month:', debtsThisMonth);
+        
+        // Sort by due date (earliest first)
+        debtsThisMonth.sort((a, b) => {
+          const dateA = new Date(a.dueDate.seconds * 1000);
+          const dateB = new Date(b.dueDate.seconds * 1000);
+          return dateA.getTime() - dateB.getTime();
+        });
+        
+        setDebts(debtsThisMonth);
+        setAllDebts(allDebtsTransformed);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -137,8 +271,17 @@ const Home = () => {
 
   const handleSignOut = async () => {
     try {
+      // Sign out from Firebase
       await logOut();
-      navigate('/login');
+      
+      // Reset all local state
+      setBalance(0);
+      setTotalDebt(0);
+      setDebtToIncomeRatio(0);
+      setDebts([]);
+      
+      // Navigate to login page with a full page reload to ensure clean state
+      window.location.href = '/login';
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -148,28 +291,30 @@ const Home = () => {
     if (!user) return;
     
     try {
-      // Update the debt in Firestore
-      const debt = debts.find(d => d.id === debtId);
-      if (debt) {
-        // Update the debt in the database
-        await updateTransaction<FirestoreDebt>(user.uid, 'debts', debtId, { paid: true });
-        
-        // Update local state
-        setDebts(debts.map(d => 
-          d.id === debtId ? { ...d, paid: true } : d
-        ));
-        
-        // Update total debt
-        setTotalDebt(prev => prev - debt.amount);
-        
-        // Update debt-to-income ratio
-        const totalIncome = await calculateTotalIncome();
-        const remainingDebt = debts
-          .filter(d => !d.paid && d.id !== debtId)
-          .reduce((sum, d) => sum + d.amount, 0);
-          
-        setDebtToIncomeRatio(totalIncome > 0 ? (remainingDebt / totalIncome) * 100 : 0);
-      }
+      const debt = allDebts.find(d => d.id === debtId);
+      if (!debt) return;
+      
+      // Update the debt in the database
+      await updateTransaction<FirestoreDebt>(user.uid, 'debts', debtId, { paid: true });
+      
+      // Update local state
+      const updateDebtState = (d: UIDebt) => d.id === debtId ? { ...d, paid: true } : d;
+      
+      setDebts(prevDebts => prevDebts.map(updateDebtState));
+      setAllDebts(prevAllDebts => prevAllDebts.map(updateDebtState));
+      
+      // Calculate remaining debt amount
+      const remainingDebt = allDebts
+        .filter(d => !d.paid && d.id !== debtId)
+        .reduce((sum: number, d: UIDebt) => sum + d.amount, 0);
+      
+      // Update total debt and reduce balance
+      setTotalDebt(remainingDebt);
+      setBalance(prev => Math.max(0, prev - debt.amount));
+      
+      // Update debt-to-income ratio
+      const totalIncome = await calculateTotalIncome();
+      setDebtToIncomeRatio(totalIncome > 0 ? (remainingDebt / totalIncome) * 100 : 0);
     } catch (error) {
       console.error('Error marking debt as paid:', error);
     }
@@ -220,12 +365,24 @@ const Home = () => {
             loading={loading}
           />
           
-          <div className="bg-white p-6 rounded-lg shadow">
-            <DebtList 
-              debts={debts} 
-              loading={loading} 
-              onMarkAsPaid={handleMarkAsPaid} 
-            />
+          <div className="space-y-8">
+            <div className="bg-white p-6 rounded-lg shadow">
+              <DebtList 
+                title="Due This Month"
+                debts={debts} 
+                loading={loading} 
+                onMarkAsPaid={handleMarkAsPaid}
+              />
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow">
+              <DebtList 
+                title="All Debts"
+                debts={allDebts} 
+                loading={loading} 
+                onMarkAsPaid={handleMarkAsPaid}
+              />
+            </div>
           </div>
         </div>
 

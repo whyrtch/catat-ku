@@ -25,20 +25,21 @@ export const useAuth = () => {
     
     authListeners.push(handleAuthChange);
     
-    // Initial check if we haven't checked auth state yet
-    if (!authStateChecked) {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        authStateChecked = true;
-        notifyAuthListeners(user);
-        unsubscribe();
-      });
-    }
+    // Set up the auth state observer
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      authStateChecked = true;
+      notifyAuthListeners(user);
+      setLoading(false);
+    });
 
     return () => {
+      // Clean up the listener
       const index = authListeners.indexOf(handleAuthChange);
       if (index > -1) {
         authListeners.splice(index, 1);
       }
+      // Unsubscribe from the auth state observer
+      unsubscribe();
     };
   }, [loading]);
 

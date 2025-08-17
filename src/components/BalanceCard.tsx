@@ -15,12 +15,14 @@ export const BalanceCard = ({
   loading = false,
 }: BalanceCardProps) => {
   const getStatusColor = (ratio: number) => {
+    if (totalDebt === 0 && balance > 0) return 'text-green-600';
     if (ratio < 0.3) return 'text-green-600';
     if (ratio < 0.5) return 'text-yellow-600';
     return 'text-red-600';
   };
 
   const getStatusText = (ratio: number) => {
+    if (totalDebt === 0 && balance > 0) return 'Healthy';
     if (ratio < 0.3) return 'Healthy';
     if (ratio < 0.5) return 'Warning';
     return 'Critical';
@@ -47,26 +49,34 @@ export const BalanceCard = ({
       <CardBody className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-500">Current Balance</p>
-            <p className="text-2xl font-bold">{formatCurrency(balance)}</p>
+            <p className="text-sm text-gray-500">
+              {balance >= 0 ? 'Current Balance' : 'Debt'}
+            </p>
+            <p className={`text-2xl font-bold ${balance < 0 ? 'text-red-600' : ''}`}>
+              {balance >= 0 ? formatCurrency(balance) : formatCurrency(Math.abs(balance))}
+            </p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-500">Total Debt</p>
-            <p className="text-2xl font-bold">{formatCurrency(totalDebt)}</p>
+            <p className={`text-2xl font-bold ${totalDebt > 0 ? 'text-red-600' : ''}`}>
+              {formatCurrency(totalDebt)}
+            </p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-500">Debt-to-Income</p>
             <div className="flex items-center justify-between">
-              <p className="text-2xl font-bold">
+              <p className={`text-2xl font-bold ${debtToIncomeRatio > 0 && getStatusColor(debtToIncomeRatio).includes('red') ? 'text-red-600' : ''}`}>
                 {Math.round(debtToIncomeRatio * 100)}%
               </p>
-              <span
-                className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                  debtToIncomeRatio
-                )} bg-opacity-20`}
-              >
-                {getStatusText(debtToIncomeRatio)}
-              </span>
+              {debtToIncomeRatio > 0 && (
+                <span
+                  className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                    debtToIncomeRatio
+                  )} bg-opacity-20`}
+                >
+                  {getStatusText(debtToIncomeRatio)}
+                </span>
+              )}
             </div>
           </div>
         </div>
