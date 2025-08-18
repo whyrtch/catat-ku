@@ -1,5 +1,4 @@
 import { Route, Routes, Navigate, useLocation, Outlet } from 'react-router-dom';
-import { useEffect } from 'react';
 
 // Import pages
 import Login from './pages/Login';
