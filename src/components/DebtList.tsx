@@ -55,66 +55,89 @@ export const DebtList = ({
         {debts.map((debt) => (
           <div
             key={debt.id}
-            className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow transition-shadow"
+            className={`p-4 rounded-lg border ${
+              debt.paid 
+                ? 'bg-gray-50 border-gray-200' 
+                : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md'
+            } transition-all`}
           >
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-gray-900">
+              <div className="flex items-center justify-between mb-2">
+                <p className={`text-lg font-semibold ${
+                  debt.paid ? 'text-gray-500' : 'text-gray-900'
+                }`}>
                   {formatCurrency(debt.amount)}
+                  {debt.paid && <span className="ml-2 text-sm font-normal">(Paid)</span>}
                 </p>
                 {debt.installmentAmount && (
-                  <span className="text-xs text-gray-500">
-                    {Math.ceil(debt.amount / debt.installmentAmount)}x of {formatCurrency(debt.installmentAmount)}
+                  <span className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
+                    {Math.ceil(debt.amount / debt.installmentAmount)}x • {formatCurrency(debt.installmentAmount)}/month
                   </span>
                 )}
               </div>
-              <div className="text-sm text-gray-500 space-y-1">
-                {debt.startDate && (
+              <div className="text-sm text-gray-600 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <p className="font-medium">Payment Schedule:</p>
-                    {Array.from({ length: (debt.tenor || 1) }).map((_, index) => {
-                      const start = debt.startDate ? 
-                        (debt.startDate instanceof Date ? debt.startDate : new Date(debt.startDate.seconds * 1000)) : 
-                        new Date();
-                      const dueDate = addMonths(start, index);
-                      const isFirst = index === 0;
-                      const isLast = index === (debt.tenor || 1) - 1;
-                      
-                      return (
-                        <div key={index} className="flex justify-between">
-                          <span>
-                            {isFirst ? 'Start: ' : isLast ? 'End: ' : `Installment ${index + 1}: `}
-                            {format(dueDate, 'MMM d, yyyy')}
-                          </span>
-                          {debt.installmentAmount && (
-                            <span className="font-medium">
-                              {formatCurrency(debt.installmentAmount)}
+                    <p className="text-xs font-medium text-gray-500">Due Date</p>
+                    <p className="font-medium">
+                      {debt.dueDate ? format(debt.dueDate instanceof Date ? debt.dueDate : new Date(debt.dueDate.seconds * 1000), 'MMM d, yyyy') : 'N/A'}
+                    </p>
+                  </div>
+                  {debt.installmentAmount && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">Installment</p>
+                      <p className="font-medium">{formatCurrency(debt.installmentAmount)}</p>
+                    </div>
+                  )}
+                </div>
+
+                {debt.startDate && (
+                  <div className="mt-2">
+                    <p className="text-xs font-medium text-gray-500 mb-1">Payment Schedule</p>
+                    <div className="space-y-1">
+                      {Array.from({ length: Math.min(debt.tenor || 1, 3) }).map((_, index) => {
+                        const start = debt.startDate ? 
+                          (debt.startDate instanceof Date ? debt.startDate : new Date(debt.startDate.seconds * 1000)) : 
+                          new Date();
+                        const dueDate = addMonths(start, index);
+                        
+                        return (
+                          <div key={index} className="flex justify-between text-sm">
+                            <span className="text-gray-700">
+                              {index === 0 ? 'First' : index === (debt.tenor || 1) - 1 ? 'Final' : `Installment ${index + 1}`}
                             </span>
-                          )}
+                            <span className="font-medium">
+                              {format(dueDate, 'MMM d')}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {(debt.tenor || 0) > 3 && (
+                        <div className="text-xs text-gray-500 italic">
+                          +{(debt.tenor || 0) - 3} more installments
                         </div>
-                      );
-                    })}
+                      )}
+                    </div>
                   </div>
                 )}
-                {!debt.startDate && (
-                  <p>
-                    Due: {debt.dueDate instanceof Date 
-                      ? format(debt.dueDate, 'MMM d, yyyy')
-                      : format(new Date(debt.dueDate.seconds * 1000), 'MMM d, yyyy')}
-                  </p>
+
+                {debt.note && (
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <p className="text-xs text-gray-500">Note</p>
+                    <p className="text-sm text-gray-700">{debt.note}</p>
+                  </div>
                 )}
               </div>
-              {debt.note && (
-                <p className="text-sm text-gray-500">{debt.note}</p>
-              )}
             </div>
-            {!debt.paid && onMarkAsPaid && (
-              <button
-                onClick={() => onMarkAsPaid(debt.id)}
-                className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Mark as Paid
-              </button>
+            {onMarkAsPaid && !debt.paid && (
+              <div className="flex-shrink-0 ml-4">
+                <button
+                  onClick={() => onMarkAsPaid(debt.id)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 whitespace-nowrap transition-colors"
+                >
+                  Mark as Paid
+                </button>
+              </div>
             )}
             {debt.paid && (
               <span className="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">
