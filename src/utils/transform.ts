@@ -1,5 +1,3 @@
-import { DocumentData } from 'firebase/firestore';
-
 interface Debt {
   id: string;
   amount: number;
