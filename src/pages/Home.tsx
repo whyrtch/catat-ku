@@ -16,7 +16,6 @@ import BalanceCard from '../components/BalanceCard';
 import DebtList from '../components/DebtList';
 import TransactionList from '../components/TransactionList';
 import { PlusIcon } from '@heroicons/react/24/outline';
-import { formatCurrency } from '../utils/format';
 
 // Local type that matches what the UI expects
 interface UIDebt {
