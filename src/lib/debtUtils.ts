@@ -1,11 +1,6 @@
 import { addMonths } from 'date-fns';
 import { addTransaction, type Debt } from './firebaseConfig';
 
-// Define the extended debt type that includes tenor
-interface ExtendedDebt extends Omit<Debt, 'id'> {
-  tenor: number;
-}
-
 interface DebtInstallment {
   amount: number;
   dueDate: Date;

@@ -7,6 +7,34 @@ export const formatCurrency = (value: number): string => {
   }).format(value);
 };
 
+export const formatTransactionDate = (date: Date | { seconds: number; nanoseconds: number } | string | undefined): string => {
+  if (!date) return 'No date';
+  
+  try {
+    let dateObj: Date;
+    
+    if (typeof date === 'string') {
+      dateObj = new Date(date);
+    } else if ('seconds' in date) {
+      // Handle Firestore timestamp
+      dateObj = new Date(date.seconds * 1000);
+    } else if (date instanceof Date) {
+      dateObj = date;
+    } else {
+      return 'Invalid date';
+    }
+    
+    return dateObj.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid date';
+  }
+};
+
 export const formatDate = (date: Date | string): string => {
   if (typeof date === 'string') {
     date = new Date(date);

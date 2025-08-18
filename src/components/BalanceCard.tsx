@@ -16,16 +16,16 @@ export const BalanceCard = ({
 }: BalanceCardProps) => {
   const getStatusColor = (ratio: number) => {
     if (totalDebt === 0 && balance > 0) return 'text-green-600';
-    if (ratio < 0.3) return 'text-green-600';
-    if (ratio < 0.5) return 'text-yellow-600';
-    return 'text-red-600';
+    if (ratio > 50) return 'text-red-600';
+    if (ratio > 30) return 'text-yellow-600';
+    return 'text-green-600';
   };
 
   const getStatusText = (ratio: number) => {
     if (totalDebt === 0 && balance > 0) return 'Healthy';
-    if (ratio < 0.3) return 'Healthy';
-    if (ratio < 0.5) return 'Warning';
-    return 'Critical';
+    if (ratio > 50) return 'Critical';
+    if (ratio > 30) return 'Warning';
+    return 'Healthy';
   };
 
   if (loading) {
@@ -66,7 +66,7 @@ export const BalanceCard = ({
             <p className="text-sm text-gray-500">Debt-to-Income</p>
             <div className="flex items-center justify-between">
               <p className={`text-2xl font-bold ${debtToIncomeRatio > 0 && getStatusColor(debtToIncomeRatio).includes('red') ? 'text-red-600' : ''}`}>
-                {Math.round(debtToIncomeRatio * 100)}%
+                {debtToIncomeRatio}%
               </p>
               {debtToIncomeRatio > 0 && (
                 <span
