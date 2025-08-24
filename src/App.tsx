@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import AddIncome from './pages/AddIncome';
 import AddExpense from './pages/AddExpense';
 import AddDebt from './pages/AddDebt';
+import DebtsPage from './pages/DebtsPage';
 import { useAuth } from './hooks/useAuth';
 
 // Protected Route wrapper
@@ -51,6 +52,7 @@ function App() {
       
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<Home />} />
+        <Route path="/debts" element={<DebtsPage />} />
         <Route path="/add-income" element={<AddIncome />} />
         <Route path="/add-expense" element={<AddExpense />} />
         <Route path="/add-debt" element={<AddDebt />} />
