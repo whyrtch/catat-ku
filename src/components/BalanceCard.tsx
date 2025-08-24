@@ -66,7 +66,7 @@ export const BalanceCard = ({
             <p className="text-sm text-gray-500">Debt-to-Income</p>
             <div className="flex items-center justify-between">
               <p className={`text-2xl font-bold ${debtToIncomeRatio > 0 && getStatusColor(debtToIncomeRatio).includes('red') ? 'text-red-600' : ''}`}>
-                {debtToIncomeRatio}%
+                {debtToIncomeRatio.toFixed(2)}%
               </p>
               {debtToIncomeRatio > 0 && (
                 <span
