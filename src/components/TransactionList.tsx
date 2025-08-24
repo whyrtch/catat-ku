@@ -1,8 +1,9 @@
+import { useEffect, useRef, useCallback } from 'react';
 import { formatCurrency, formatTransactionDate } from '../utils/format';
 
 interface TransactionListProps {
   transactions: Array<{
-    id: string;
+    id?: string;  // Made optional to match the Income type
     type: 'income' | 'expense' | 'debt';
     amount: number;
     date: Date | { seconds: number; nanoseconds: number } | string | undefined;
@@ -12,10 +13,49 @@ interface TransactionListProps {
   }>;
   loading: boolean;
   onMarkAsPaid?: (id: string) => void;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
 }
 
-const TransactionList = ({ transactions, loading, onMarkAsPaid }: TransactionListProps) => {
-  if (loading) {
+const TransactionList = ({ 
+  transactions, 
+  loading, 
+  onMarkAsPaid, 
+  hasMore = false, 
+  onLoadMore = () => {} 
+}: TransactionListProps) => {
+  const observer = useRef<IntersectionObserver>();
+  const lastTransactionElementRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (loading) return;
+      
+      if (observer.current) {
+        observer.current.disconnect();
+      }
+      
+      observer.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0]?.isIntersecting && hasMore) {
+            onLoadMore();
+          }
+        },
+        { threshold: 0.1 }
+      );
+      
+      if (node) {
+        observer.current.observe(node);
+      }
+      
+      return () => {
+        if (observer.current) {
+          observer.current.disconnect();
+        }
+      };
+    },
+    [loading, hasMore, onLoadMore]
+  );
+
+  if (loading && transactions.length === 0) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
@@ -27,23 +67,32 @@ const TransactionList = ({ transactions, loading, onMarkAsPaid }: TransactionLis
 
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">No transactions found</p>
+      <div className="text-center py-8 text-gray-500">
+        No transactions found
       </div>
     );
   }
 
+  useEffect(() => {
+    return () => {
+      if (observer.current) {
+        observer.current.disconnect();
+      }
+    };
+  }, []);
+
   return (
     <div className="space-y-4">
-      {transactions.map((transaction) => {
+      {transactions.map((transaction, index) => {
         const isIncome = transaction.type === 'income';
         const isExpense = transaction.type === 'expense';
         const isDebt = transaction.type === 'debt';
         
         return (
           <div 
-            key={`${transaction.type}-${transaction.id}`} 
-            className={`p-4 border rounded-lg ${
+            ref={index === transactions.length - 1 ? lastTransactionElementRef : null}
+            key={transaction.id || index} 
+            className={`p-4 rounded-lg ${
               isIncome ? 'bg-green-50' : 
               isExpense ? 'bg-red-50' : 
               'bg-blue-50'
@@ -73,10 +122,10 @@ const TransactionList = ({ transactions, loading, onMarkAsPaid }: TransactionLis
                   {transaction.category && ` • ${transaction.category.charAt(0).toUpperCase() + transaction.category.slice(1)}`}
                 </p>
               </div>
-              {isDebt && !transaction.paid && onMarkAsPaid && (
+              {isDebt && !transaction.paid && onMarkAsPaid && transaction.id && (
                 <div className="flex items-center ml-4">
                   <button
-                    onClick={() => onMarkAsPaid(transaction.id)}
+                    onClick={() => transaction.id && onMarkAsPaid(transaction.id)}
                     className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 whitespace-nowrap"
                   >
                     Mark as Paid
@@ -90,6 +139,28 @@ const TransactionList = ({ transactions, loading, onMarkAsPaid }: TransactionLis
           </div>
         );
       })}
+      {loading && (
+        <div className="flex justify-center py-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+      {hasMore && !loading && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={onLoadMore}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Load More
+          </button>
+        </div>
+      )}
+      
+      {!hasMore && transactions.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-gray-500">No transactions found</p>
+        </div>
+      )}
     </div>
   );
 };

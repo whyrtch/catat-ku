@@ -73,31 +73,56 @@ export const db = (() => {
 
 export const googleProvider = new GoogleAuthProvider();
 
+// Import types from models
+import { 
+  Expense,
+  Income as ModelsIncome, 
+  Debt as ModelsDebt,
+  type FirebaseTimestamp,
+  type TransactionType as ModelTransactionType,
+  type BaseTransaction as ModelBaseTransaction
+} from '../types/models';
+
 // Types
 export type TransactionType = 'incomes' | 'expenses' | 'debts';
 
-export interface BaseTransaction {
+export type { Expense };
+
+// Map between model and firebase transaction types
+const toFirebaseType = (type: ModelTransactionType): TransactionType => {
+  switch (type) {
+    case 'income': return 'incomes';
+    case 'expense': return 'expenses';
+    case 'debt': return 'debts';
+  }
+};
+
+const toModelType = (type: TransactionType): ModelTransactionType => {
+  switch (type) {
+    case 'incomes': return 'income';
+    case 'expenses': return 'expense';
+    case 'debts': return 'debt';
+  }
+};
+
+export interface BaseTransaction extends Omit<ModelBaseTransaction, 'type'> {
   id?: string;
   amount: number;
-  date: Date | { seconds: number; nanoseconds: number };
+  date: Date | FirebaseTimestamp;
   note?: string;
   category?: string;
   userId?: string;
-  createdAt?: { seconds: number; nanoseconds: number } | Date;
-  updatedAt?: { seconds: number; nanoseconds: number } | Date;
+  createdAt?: FirebaseTimestamp | Date;
+  updatedAt?: FirebaseTimestamp | Date;
+  type: ModelTransactionType;
 }
 
-export interface Income extends BaseTransaction {
+export interface Income extends BaseTransaction, Omit<ModelsIncome, 'type'> {
   type: 'income';
   category: 'salary' | 'bonus' | 'investment' | 'other';
 }
 
-export interface Expense extends BaseTransaction {
-  type: 'expense';
-  category: string;
-}
-
-export interface Debt extends BaseTransaction {
+export interface Debt extends Omit<ModelsDebt, 'type'>, BaseTransaction {
   type: 'debt';
   dueDate: Date | { seconds: number; nanoseconds: number };
   paid: boolean;
@@ -105,6 +130,8 @@ export interface Debt extends BaseTransaction {
 }
 
 type Transaction = Income | Expense | Debt;
+
+export { toFirebaseType, toModelType };
 
 // Auth functions
 export const signInWithGoogle = async (): Promise<FirebaseUser> => {
@@ -291,20 +318,33 @@ export const getMonthlyTransactions = async <T extends Transaction>(
 
 export const getUpcomingDebts = async (
   userId: string,
-  limitCount: number = 5
+  limitCount: number = 5,
+  startAfterDoc: any = null
 ): Promise<Debt[]> => {
-  const now = new Date();
-  const { data } = await getTransactions<Debt>(userId, 'debts', {
-    filters: [
-      { field: 'paid', operator: '==', value: false },
-      { field: 'dueDate', operator: '>=', value: now },
-    ],
-    orderByField: 'dueDate',
-    orderDirection: 'asc',
-    limitCount,
-  });
-  
-  return data;
+  try {
+    const now = Timestamp.now();
+    let q = query(
+      collection(db, 'users', userId, 'debts'),
+      where('paid', '==', false),
+      where('dueDate', '>=', now),
+      orderBy('dueDate', 'asc'),
+      limit(limitCount)
+    );
+    
+    // Add startAfter if provided for pagination
+    if (startAfterDoc) {
+      q = query(q, startAfter(startAfterDoc));
+    }
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Debt));
+  } catch (error) {
+    console.error('Error getting upcoming debts:', error);
+    throw error;
+  }
 };
 
 export const getAllDebts = async (userId: string): Promise<Debt[]> => {

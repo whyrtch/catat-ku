@@ -3,7 +3,9 @@ import { formatCurrency } from '../utils/format';
 
 interface BalanceCardProps {
   balance: number;
-  totalDebt: number;
+  totalDebt: number;  // This is the total of all debts (current month + upcoming)
+  monthlyDebt: number;  // This is just the current month's debt
+  upcomingDebts: number;
   debtToIncomeRatio: number;
   loading?: boolean;
 }
@@ -11,6 +13,8 @@ interface BalanceCardProps {
 export const BalanceCard = ({
   balance,
   totalDebt,
+  monthlyDebt,
+  upcomingDebts,
   debtToIncomeRatio,
   loading = false,
 }: BalanceCardProps) => {
@@ -47,7 +51,7 @@ export const BalanceCard = ({
         <h2 className="text-xl font-bold">Financial Overview</h2>
       </CardHeader>
       <CardBody className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-4 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-500">
               {balance >= 0 ? 'Current Balance' : 'Debt'}
@@ -57,26 +61,42 @@ export const BalanceCard = ({
             </p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-500">Total Debt</p>
-            <p className={`text-2xl font-bold ${totalDebt > 0 ? 'text-red-600' : ''}`}>
+            <p className="text-sm text-gray-500">Debt This Month</p>
+            <p className={`text-2xl font-bold ${monthlyDebt > 0 ? 'text-red-600' : ''}`}>
+              {formatCurrency(monthlyDebt)}
+            </p>
+          </div>
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-500">Upcoming Debts</p>
+            <p className={`text-2xl font-bold ${upcomingDebts > 0 ? 'text-yellow-600' : ''}`}>
+              {formatCurrency(upcomingDebts)}
+            </p>
+          </div>
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <div className="flex justify-between items-start">
+              <p className="text-sm text-gray-500">Total Debt</p>
+              <button 
+                onClick={() => window.location.href = '/debts'}
+                className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                View Details
+              </button>
+            </div>
+            <p className={`text-2xl font-bold mt-1 ${totalDebt > 0 ? 'text-red-600' : ''}`}>
               {formatCurrency(totalDebt)}
             </p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-500">Debt-to-Income</p>
             <div className="flex items-center justify-between">
-              <p className={`text-2xl font-bold ${debtToIncomeRatio > 0 && getStatusColor(debtToIncomeRatio).includes('red') ? 'text-red-600' : ''}`}>
-                {debtToIncomeRatio}%
+              <p className={`text-2xl font-bold ${getStatusColor(debtToIncomeRatio)}`}>
+                {debtToIncomeRatio.toFixed(2)}%
               </p>
-              {debtToIncomeRatio > 0 && (
-                <span
-                  className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                    debtToIncomeRatio
-                  )} bg-opacity-20`}
-                >
-                  {getStatusText(debtToIncomeRatio)}
-                </span>
-              )}
+              <span
+                className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(debtToIncomeRatio)} bg-opacity-20`}
+              >
+                {getStatusText(debtToIncomeRatio)}
+              </span>
             </div>
           </div>
         </div>

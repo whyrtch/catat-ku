@@ -18,6 +18,7 @@ interface DebtListProps {
   onMarkAsPaid?: (debtId: string) => void;
   title?: string;
   className?: string;
+  totalAmount?: number;
 }
 
 export const DebtList = ({
@@ -26,6 +27,7 @@ export const DebtList = ({
   title,
   className = '',
   onMarkAsPaid,
+  totalAmount,
 }: DebtListProps) => {
   if (loading) {
     return (
@@ -50,7 +52,16 @@ export const DebtList = ({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {title && <h3 className="text-lg font-medium text-gray-900">{title}</h3>}
+      {title && (
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+          {totalAmount !== undefined && (
+            <span className="text-lg font-medium text-gray-900">
+              {formatCurrency(totalAmount)}
+            </span>
+          )}
+        </div>
+      )}
       <div className="space-y-2">
         {debts.map((debt) => (
           <div
