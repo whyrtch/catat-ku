@@ -1,12 +1,18 @@
-import { Button } from '@heroui/button';
-import { GoogleIcon } from './icons/GoogleIcon';
+import { Button } from "@heroui/button";
+
+import { GoogleIcon } from "./icons/GoogleIcon";
 
 interface LoginCardProps {
   onGoogleSignIn: () => Promise<void>;
   isLoading: boolean;
+  error?: string | null;
 }
 
-export const LoginCard = ({ onGoogleSignIn, isLoading }: LoginCardProps) => {
+export const LoginCard = ({
+  onGoogleSignIn,
+  isLoading,
+  error,
+}: LoginCardProps) => {
   return (
     <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
       <div className="flex flex-col items-center">
@@ -26,20 +32,24 @@ export const LoginCard = ({ onGoogleSignIn, isLoading }: LoginCardProps) => {
             <div className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 text-gray-500 bg-white">
-              Continue with
-            </span>
+            <span className="px-2 text-gray-500 bg-white">Continue with</span>
           </div>
         </div>
 
+        {error && (
+          <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md">
+            {error}
+          </div>
+        )}
+
         <div className="mt-6">
           <Button
-            onClick={onGoogleSignIn}
             className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
             disabled={isLoading}
+            onClick={onGoogleSignIn}
           >
             <GoogleIcon className="w-5 h-5 mr-2" />
-            {isLoading ? 'Signing in...' : 'Sign in with Google'}
+            {isLoading ? "Signing in..." : "Sign in with Google"}
           </Button>
         </div>
       </div>
