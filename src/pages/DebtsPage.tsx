@@ -38,11 +38,11 @@ export const DebtsPage = () => {
   };
 
   const handlePreviousMonth = () => {
-    setSelectedMonth(prev => subMonths(prev, 1));
+    setSelectedMonth(prev => prev && subMonths(prev, 1));
   };
 
   const handleNextMonth = () => {
-    setSelectedMonth(prev => addMonths(prev, 1));
+    setSelectedMonth(prev => prev && addMonths(prev, 1));
   };
 
   const totalDebt = filteredDebts.reduce((sum, debt) => sum + debt.amount, 0);
