@@ -1,50 +1,91 @@
-# Vite & HeroUI Template
+# Catat-Ku - Debt and Transaction Management App
 
-This is a template for creating applications using Vite and HeroUI (v2).
+Catat-Ku is a modern web application for managing personal debts and transactions. Built with React, TypeScript, and Firebase, it helps you keep track of your financial activities with an intuitive interface.
 
-[Try it on CodeSandbox](https://githubbox.com/frontio-ai/vite-template)
+## Features
+
+- 📝 Record and manage debts
+- 💰 Track transactions
+- 📅 Set due dates and payment schedules
+- 🔒 Secure authentication with Firebase
+- 📱 Responsive design for all devices
+- 📊 View transaction history and summaries
 
 ## Technologies Used
 
-- [Vite](https://vitejs.dev/guide/)
-- [HeroUI](https://heroui.com)
-- [Tailwind CSS](https://tailwindcss.com)
-- [Tailwind Variants](https://tailwind-variants.org)
-- [TypeScript](https://www.typescriptlang.org)
-- [Framer Motion](https://www.framer.com/motion)
+- ⚡ [Vite](https://vitejs.dev/) - Fast frontend tooling
+- 🎨 [HeroUI](https://heroui.com) - Beautiful UI components
+- 🎨 [Tailwind CSS](https://tailwindcss.com) - Utility-first CSS framework
+- 🔷 [TypeScript](https://www.typescriptlang.org) - Type-safe JavaScript
+- 🔥 [Firebase](https://firebase.google.com) - Backend services
+- 📱 [React Router](https://reactrouter.com/) - Client-side routing
+- 📅 [date-fns](https://date-fns.org/) - Date utilities
 
-## How to Use
+## Getting Started
 
-To clone the project, run the following command:
+### Prerequisites
+
+- Node.js (v16 or later)
+- npm or yarn
+- Firebase project (for backend services)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/catat-ku.git
+   cd catat-ku
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
+
+3. Set up environment variables:
+   Create a `.env` file in the root directory and add your Firebase configuration:
+   ```env
+   VITE_FIREBASE_API_KEY=your_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
+   VITE_FIREBASE_PROJECT_ID=your_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+   VITE_FIREBASE_APP_ID=your_app_id
+   VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+   ```
+
+### Running the App
+
+1. Start the development server:
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   ```
+
+2. Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+### Building for Production
 
 ```bash
-git clone https://github.com/frontio-ai/vite-template.git
+npm run build
+# or
+yarn build
 ```
 
-### Install dependencies
+## Project Structure
 
-You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
-
-```bash
-npm install
 ```
-
-### Run the development server
-
-```bash
-npm run dev
+src/
+├── components/     # Reusable UI components
+├── hooks/         # Custom React hooks
+├── lib/           # Firebase configuration and utilities
+├── pages/         # Application pages
+└── utils/         # Helper functions and utilities
 ```
-
-### Setup pnpm (optional)
-
-If you are using `pnpm`, you need to add the following code to your `.npmrc` file:
-
-```bash
-public-hoist-pattern[]=*@heroui/*
-```
-
-After modifying the `.npmrc` file, you need to run `pnpm install` again to ensure that the dependencies are installed correctly.
 
 ## License
 
-Licensed under the [MIT license](https://github.com/frontio-ai/vite-template/blob/main/LICENSE).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
