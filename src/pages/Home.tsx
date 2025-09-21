@@ -2,26 +2,20 @@ import { useState, useCallback } from 'react';
 import { NavBar } from '../components/home/NavBar';
 import { FloatingActionButton } from '../components/home/FloatingActionButton';
 import { DebtSection } from '../components/home/DebtSection';
-import { TransactionsSection } from '../components/home/TransactionsSection';
-import BalanceCard from '../components/BalanceCard';
-import { useBalanceCard } from '../hooks/useBalanceCard';
 import { useDebts } from '../hooks/useDebts';
-import { useTransactions } from '../hooks/useTransactions';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { formatCurrency } from '../utils/format';
 
 const Home = () => {
   const [showMenu, setShowMenu] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   
-  // Fetch data using separate hooks
-  const { balance, loading: balanceLoading } = useBalanceCard();
-  
   // Debts due this month
   const { 
     debts, 
-    markAsPaid: markMonthlyDebtAsPaid,
+    markAsPaid: handleMarkAsPaid,
     totalDebt: monthlyTotalDebt,
     loading: monthlyDebtsLoading 
   } = useDebts((debt) => {
@@ -37,8 +31,7 @@ const Home = () => {
   
   // Upcoming debts
   const { 
-    debts: allDebts, 
-    markAsPaid: markUpcomingDebtAsPaid,
+    debts: allDebts,
     totalDebt: upcomingTotalDebt,
     loading: upcomingDebtsLoading
   } = useDebts((debt) => {
@@ -50,30 +43,20 @@ const Home = () => {
       dueDate.getFullYear() > now.getFullYear()
     );
   });
-
-  
-  const handleMarkAsPaid = useCallback(async (debtId: string) => {
-    const success = await markMonthlyDebtAsPaid(debtId) || 
-                   await markUpcomingDebtAsPaid(debtId);
-    return !!success;
-  }, [markMonthlyDebtAsPaid, markUpcomingDebtAsPaid]);
-  
-  const toggleMenu = useCallback(() => setShowMenu(prev => !prev), []);
-  const navigateTo = useCallback((path: string) => navigate(path), [navigate]);
-  
   const handleSignOut = useCallback(async () => {
     await signOut();
     navigate('/login');
   }, [signOut, navigate]);
-  
-  const loading = balanceLoading || monthlyDebtsLoading || upcomingDebtsLoading;
-  const totalDebt = (monthlyTotalDebt || 0) + (upcomingTotalDebt || 0);
-  
-  // Calculate debt-to-income ratio using available data
-  // For a more accurate ratio, consider adding a dedicated hook for incomes
-  const debtToIncomeRatio = balance > 0 ? (totalDebt / balance) * 100 : 0;
-  
-  if (loading && !user) {
+
+  const toggleMenu = useCallback(() => {
+    setShowMenu(prev => !prev);
+  }, []);
+
+  const handleAddDebt = useCallback(() => {
+    navigate('/add-debt');
+  }, [navigate]);
+
+  if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -87,20 +70,35 @@ const Home = () => {
 
       <main className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="space-y-6">
-          <BalanceCard 
-            balance={balance}
-            totalDebt={totalDebt}
-            monthlyDebt={monthlyTotalDebt || 0}
-            upcomingDebts={upcomingTotalDebt}
-            debtToIncomeRatio={debtToIncomeRatio}
-            loading={loading}
-          />
+          <div className="bg-white rounded-lg shadow p-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">My Debts</h1>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500">Total Debt</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {formatCurrency(monthlyTotalDebt + upcomingTotalDebt)}
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500">Due This Month</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {formatCurrency(monthlyTotalDebt || 0)}
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500">Upcoming</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {formatCurrency(upcomingTotalDebt || 0)}
+                </p>
+              </div>
+            </div>
+          </div>
           
           <div className="space-y-8">
             <DebtSection
               title="Debts Due This Month"
               debts={debts}
-              loading={loading}
+              loading={monthlyDebtsLoading}
               onMarkAsPaid={handleMarkAsPaid}
               filterFn={(debt) => {
                 if (debt.paid) return false;
@@ -116,7 +114,7 @@ const Home = () => {
             <DebtSection
               title="Upcoming Debts"
               debts={allDebts}
-              loading={loading}
+              loading={upcomingDebtsLoading}
               onMarkAsPaid={handleMarkAsPaid}
               filterFn={(debt) => {
                 if (debt.paid) return false;
@@ -136,9 +134,7 @@ const Home = () => {
       <FloatingActionButton
         showMenu={showMenu}
         onToggleMenu={toggleMenu}
-        onAddIncome={() => navigateTo('/add-income')}
-        onAddExpense={() => navigateTo('/add-expense')}
-        onAddDebt={() => navigateTo('/add-debt')}
+        onAddDebt={handleAddDebt}
       />
     </div>
   );

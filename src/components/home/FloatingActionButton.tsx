@@ -4,16 +4,12 @@ import { ReactNode, useRef, useEffect } from 'react';
 interface FloatingActionButtonProps {
   showMenu: boolean;
   onToggleMenu: () => void;
-  onAddIncome: () => void;
-  onAddExpense: () => void;
   onAddDebt: () => void;
 }
 
 export const FloatingActionButton = ({
   showMenu,
   onToggleMenu,
-  onAddIncome,
-  onAddExpense,
   onAddDebt,
 }: FloatingActionButtonProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -71,58 +67,9 @@ export const FloatingActionButton = ({
         <ActionButton
           onClick={() => {
             onToggleMenu();
-            onAddIncome();
-          }}
-          className="bg-green-500 hover:bg-green-600 focus:ring-green-400"
-          delay="100ms"
-        >
-          <div className="flex flex-col items-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 group-hover:scale-110 transition-transform"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            <span className="text-xs font-medium mt-1">Income</span>
-          </div>
-        </ActionButton>
-
-        <ActionButton
-          onClick={() => {
-            onToggleMenu();
-            onAddExpense();
-          }}
-          className="bg-red-500 hover:bg-red-600 focus:ring-red-400"
-          delay="50ms"
-        >
-          <div className="flex flex-col items-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 group-hover:scale-110 transition-transform"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-            </svg>
-            <span className="text-xs font-medium mt-1">Expense</span>
-          </div>
-        </ActionButton>
-
-        <ActionButton
-          onClick={() => {
-            onToggleMenu();
             onAddDebt();
           }}
-          className="bg-blue-500 hover:bg-blue-600 focus:ring-blue-400"
+          className="bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400"
         >
           <div className="flex flex-col items-center">
             <svg

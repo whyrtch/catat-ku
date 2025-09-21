@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LoginCard } from '../components/LoginCard';
-import { auth, googleProvider } from '../lib/firebaseConfig';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithGoogle } from '../lib/firebaseConfig';
 
 export const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -12,7 +11,7 @@ export const Login = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      await signInWithPopup(auth, googleProvider);
+      await signInWithGoogle();
       // Redirect to the intended page or home
       const from = location.state?.from?.pathname || '/';
       navigate(from, { replace: true });

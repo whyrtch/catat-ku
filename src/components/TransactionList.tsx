@@ -3,13 +3,12 @@ import { formatCurrency, formatTransactionDate } from '../utils/format';
 
 interface TransactionListProps {
   transactions: Array<{
-    id?: string;  // Made optional to match the Income type
-    type: 'income' | 'expense' | 'debt';
+    id?: string;
     amount: number;
     date: Date | { seconds: number; nanoseconds: number } | string | undefined;
-    category?: string;
     note?: string;
     paid?: boolean;
+    dueDate?: Date | { seconds: number; nanoseconds: number } | string | undefined;
   }>;
   loading: boolean;
   onMarkAsPaid?: (id: string) => void;
@@ -83,62 +82,47 @@ const TransactionList = ({
 
   return (
     <div className="space-y-4">
-      {transactions.map((transaction, index) => {
-        const isIncome = transaction.type === 'income';
-        const isExpense = transaction.type === 'expense';
-        const isDebt = transaction.type === 'debt';
-        
-        return (
-          <div 
-            ref={index === transactions.length - 1 ? lastTransactionElementRef : null}
-            key={transaction.id || index} 
-            className={`p-4 rounded-lg ${
-              isIncome ? 'bg-green-50' : 
-              isExpense ? 'bg-red-50' : 
-              'bg-blue-50'
-            }`}
-          >
-            <div className="flex justify-between">
-              <div className="flex-1">
-                <div className="flex justify-between items-start">
-                  <p className={`font-medium ${
-                    isIncome ? 'text-green-700' : 
-                    isExpense ? 'text-red-700' : 
-                    transaction.paid ? 'text-gray-500' : 'text-blue-700'
-                  }`}>
-                    {isIncome ? '↑' : isExpense ? '↓' : transaction.paid ? '✅' : '⏳'} 
-                    {' '}
-                    {formatCurrency(transaction.amount)}
-                  </p>
-                  <span className={`text-sm ${
-                    isIncome ? 'text-green-600' : 
-                    isExpense ? 'text-red-600' : 'text-blue-600'
-                  }`}>
-                    {isIncome ? 'Income' : isExpense ? 'Expense' : 'Debt'}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-500">
-                  {formatTransactionDate(transaction.date)}
-                  {transaction.category && ` • ${transaction.category.charAt(0).toUpperCase() + transaction.category.slice(1)}`}
+      {transactions.map((transaction, index) => (
+        <div 
+          ref={index === transactions.length - 1 ? lastTransactionElementRef : null}
+          key={transaction.id || index} 
+          className="p-4 rounded-lg bg-blue-50"
+        >
+          <div className="flex justify-between">
+            <div className="flex-1">
+              <div className="flex justify-between items-start">
+                <p className={`font-medium ${
+                  transaction.paid ? 'text-gray-500' : 'text-blue-700'
+                }`}>
+                  {transaction.paid ? '✅' : '⏳'} {formatCurrency(transaction.amount)}
                 </p>
+                <span className="text-sm text-blue-600">
+                  Debt
+                </span>
               </div>
-              {isDebt && !transaction.paid && onMarkAsPaid && transaction.id && (
-                <div className="flex items-center ml-4">
-                  <button
-                    onClick={() => transaction.id && onMarkAsPaid(transaction.id)}
-                    className="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 whitespace-nowrap"
-                  >
-                    Mark as Paid
-                  </button>
-                </div>
+              {transaction.note && (
+                <p className="text-sm text-gray-500">
+                  {transaction.note}
+                </p>
+              )}
+              {transaction.dueDate && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Due: {formatTransactionDate(transaction.dueDate)}
+                </p>
               )}
             </div>
-            {transaction.note && (
-              <p className="mt-2 text-sm text-gray-600">{transaction.note}</p>
+            
+            {onMarkAsPaid && transaction.id && !transaction.paid && (
+              <button
+                onClick={() => transaction.id && onMarkAsPaid(transaction.id)}
+                className="ml-4 px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+              >
+                Mark as Paid
+              </button>
             )}
           </div>
-        );
-      })}
+        </div>
+      ))}
       {loading && (
         <div className="flex justify-center py-4">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
