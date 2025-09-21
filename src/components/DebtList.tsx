@@ -141,7 +141,7 @@ export const DebtList = ({
               </div>
             </div>
             {onMarkAsPaid && !debt.paid && (
-              <div className="flex-shrink-0 ml-4">
+              <div className="flex w-full mt-4 justify-end">
                 <button
                   onClick={() => onMarkAsPaid(debt.id)}
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 whitespace-nowrap transition-colors"

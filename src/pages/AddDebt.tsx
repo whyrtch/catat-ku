@@ -40,7 +40,7 @@ const AddDebt = () => {
 
     const totalAmount = parseFloat(amount);
     const startDateObj = tenor > 1 ? parseISO(startDate) : parseISO(dueDate);
-    const baseNote = note || 'Debt payment';
+    const baseNote = note + ', Debt payment';
     
     if (startDateObj > new Date(dueDate)) {
       setError('Start date cannot be after due date');

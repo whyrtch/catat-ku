@@ -3,7 +3,7 @@ export type FirebaseTimestamp = { seconds: number; nanoseconds: number };
 export type DateType = Date | FirebaseTimestamp;
 
 // Transaction types
-export type TransactionType = 'income' | 'expense' | 'debt';
+export type TransactionType = 'debt';
 
 export interface BaseTransaction {
   id?: string;
@@ -14,16 +14,6 @@ export interface BaseTransaction {
   createdAt?: DateType;
   updatedAt?: DateType;
   type: TransactionType;
-}
-
-export interface Income extends BaseTransaction {
-  type: 'income';
-  category: 'salary' | 'bonus' | 'investment' | 'other';
-}
-
-export interface Expense extends BaseTransaction {
-  type: 'expense';
-  category: string;
 }
 
 export interface Debt extends BaseTransaction {
@@ -47,10 +37,9 @@ export interface UITransaction {
   type: TransactionType;
   amount: number;
   date: FirebaseTimestamp;
-  category?: string;
   note?: string;
   paid?: boolean;
 }
 
 // Union type of all transaction types
-export type Transaction = Income | Expense | Debt;
+export type Transaction = Debt;

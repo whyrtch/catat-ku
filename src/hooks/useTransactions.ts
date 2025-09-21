@@ -6,14 +6,16 @@ import { db } from '../lib/firebaseConfig';
 export interface Transaction {
   id: string;
   amount: number;
-  type: 'income' | 'expense' | 'debt';
-  category: string;
+  type: 'debt';
   status: 'pending' | 'completed' | 'failed';
   note?: string;
   date: { seconds: number; nanoseconds: number };
+  dueDate: { seconds: number; nanoseconds: number };
   userId: string;
+  paid: boolean;
   createdAt: { seconds: number; nanoseconds: number };
   updatedAt: { seconds: number; nanoseconds: number };
+  installmentAmount?: number;
 }
 
 interface UseTransactionsResult {
@@ -45,9 +47,9 @@ export const useTransactions = (): UseTransactionsResult => {
       }
 
       let q = query(
-        collection(db, 'transactions'),
+        collection(db, 'debts'),
         where('userId', '==', user.uid),
-        orderBy('date', 'desc'),
+        orderBy('dueDate', 'asc'),
         limit(PAGE_SIZE)
       );
 

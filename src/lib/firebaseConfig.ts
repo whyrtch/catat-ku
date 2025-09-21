@@ -75,34 +75,22 @@ export const googleProvider = new GoogleAuthProvider();
 
 // Import types from models
 import { 
-  Expense,
-  Income as ModelsIncome, 
-  Debt as ModelsDebt,
+  type Debt as ModelsDebt,
   type FirebaseTimestamp,
   type TransactionType as ModelTransactionType,
   type BaseTransaction as ModelBaseTransaction
 } from '../types/models';
 
 // Types
-export type TransactionType = 'incomes' | 'expenses' | 'debts';
-
-export type { Expense };
+export type TransactionType = 'debts';
 
 // Map between model and firebase transaction types
-const toFirebaseType = (type: ModelTransactionType): TransactionType => {
-  switch (type) {
-    case 'income': return 'incomes';
-    case 'expense': return 'expenses';
-    case 'debt': return 'debts';
-  }
+const toFirebaseType = (): TransactionType => {
+  return 'debts';
 };
 
-const toModelType = (type: TransactionType): ModelTransactionType => {
-  switch (type) {
-    case 'incomes': return 'income';
-    case 'expenses': return 'expense';
-    case 'debts': return 'debt';
-  }
+const toModelType = (): 'debt' => {
+  return 'debt';
 };
 
 export interface BaseTransaction extends Omit<ModelBaseTransaction, 'type'> {
@@ -117,11 +105,6 @@ export interface BaseTransaction extends Omit<ModelBaseTransaction, 'type'> {
   type: ModelTransactionType;
 }
 
-export interface Income extends BaseTransaction, Omit<ModelsIncome, 'type'> {
-  type: 'income';
-  category: 'salary' | 'bonus' | 'investment' | 'other';
-}
-
 export interface Debt extends Omit<ModelsDebt, 'type'>, BaseTransaction {
   type: 'debt';
   dueDate: Date | { seconds: number; nanoseconds: number };
@@ -129,7 +112,7 @@ export interface Debt extends Omit<ModelsDebt, 'type'>, BaseTransaction {
   installmentAmount?: number;
 }
 
-type Transaction = Income | Expense | Debt;
+type Transaction = Debt;
 
 export { toFirebaseType, toModelType };
 
@@ -143,13 +126,19 @@ export const signInWithGoogle = async (): Promise<FirebaseUser> => {
     if (user) {
       const userRef = doc(db, 'users', user.uid);
       const userData = {
-        displayName: user.displayName,
+        uid: user.uid, // Explicitly store the user ID
+        displayName: user.displayName || user.email?.split('@')[0] || 'User',
         email: user.email,
         photoURL: user.photoURL,
-        lastLogin: Timestamp.now()
+        lastLogin: Timestamp.now(),
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
       };
       
-await setDoc(userRef, userData, { merge: true });
+      // Use setDoc with merge to update or create the document
+      await setDoc(userRef, userData, { merge: true });
+      
+      console.log('User data saved/updated in Firestore:', user.uid);
     }
     
     return user;
