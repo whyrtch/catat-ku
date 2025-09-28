@@ -1,59 +1,52 @@
-import { useState, useCallback } from 'react';
-import { NavBar } from '../components/home/NavBar';
-import { FloatingActionButton } from '../components/home/FloatingActionButton';
-import { DebtSection } from '../components/home/DebtSection';
-import { useDebts } from '../hooks/useDebts';
-import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import { formatCurrency } from '../utils/format';
+import { useState, useCallback } from "react";
+import { NavBar } from "../components/home/NavBar";
+import { FloatingActionButton } from "../components/home/FloatingActionButton";
+import { DueDebtsSection } from "../components/home/DueDebtsSection";
+import { UpcomingDebtsSection } from "../components/home/UpcomingDebtsSection";
+import { useDebts } from "../hooks/useDebts";
+import { useAuth } from "../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { formatCurrency } from "../utils/format";
 
 const Home = () => {
   const [showMenu, setShowMenu] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  
+
   // Debts due this month
-  const { 
-    debts, 
+  const {
+    debts,
     markAsPaid: handleMarkAsPaid,
     totalDebt: monthlyTotalDebt,
-    loading: monthlyDebtsLoading 
+    loading: monthlyDebtsLoading,
   } = useDebts((debt) => {
     if (debt.paid) return false;
     const now = new Date();
     const dueDate = new Date(debt.dueDate.seconds * 1000);
     return (
-      (dueDate.getMonth() === now.getMonth() && 
-       dueDate.getFullYear() === now.getFullYear()) ||
+      (dueDate.getMonth() === now.getMonth() &&
+        dueDate.getFullYear() === now.getFullYear()) ||
       dueDate < now
     );
   });
+
+  // Upcoming debts state
+  const [upcomingTotalDebt, setUpcomingTotalDebt] = useState(0);
   
-  // Upcoming debts
-  const { 
-    debts: allDebts,
-    totalDebt: upcomingTotalDebt,
-    loading: upcomingDebtsLoading
-  } = useDebts((debt) => {
-    if (debt.paid) return false;
-    const now = new Date();
-    const dueDate = new Date(debt.dueDate.seconds * 1000);
-    return (
-      dueDate > new Date(now.getFullYear(), now.getMonth() + 1, 0) ||
-      dueDate.getFullYear() > now.getFullYear()
-    );
-  });
+  const handleUpcomingTotalChange = useCallback((total: number) => {
+    setUpcomingTotalDebt(total);
+  }, []);
   const handleSignOut = useCallback(async () => {
     await signOut();
-    navigate('/login');
+    navigate("/login");
   }, [signOut, navigate]);
 
   const toggleMenu = useCallback(() => {
-    setShowMenu(prev => !prev);
+    setShowMenu((prev) => !prev);
   }, []);
 
   const handleAddDebt = useCallback(() => {
-    navigate('/add-debt');
+    navigate("/add-debt");
   }, [navigate]);
 
   if (!user) {
@@ -93,40 +86,15 @@ const Home = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="space-y-8">
-            <DebtSection
-              title="Debts Due This Month"
+            <DueDebtsSection
               debts={debts}
               loading={monthlyDebtsLoading}
               onMarkAsPaid={handleMarkAsPaid}
-              filterFn={(debt) => {
-                if (debt.paid) return false;
-                const now = new Date();
-                const dueDate = new Date(debt.dueDate.seconds * 1000);
-                return (
-                  dueDate.getMonth() === now.getMonth() && 
-                  dueDate.getFullYear() === now.getFullYear()
-                );
-              }}
-            />
-            
-            <DebtSection
-              title="Upcoming Debts"
-              debts={allDebts}
-              loading={upcomingDebtsLoading}
-              onMarkAsPaid={handleMarkAsPaid}
-              filterFn={(debt) => {
-                if (debt.paid) return false;
-                const now = new Date();
-                const dueDate = new Date(debt.dueDate.seconds * 1000);
-                return (
-                  dueDate > new Date(now.getFullYear(), now.getMonth() + 1, 0) ||
-                  dueDate.getFullYear() > now.getFullYear()
-                );
-              }}
             />
 
+            <UpcomingDebtsSection onTotalChange={handleUpcomingTotalChange} />
           </div>
         </div>
       </main>

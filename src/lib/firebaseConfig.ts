@@ -390,15 +390,21 @@ export const getMonthlyTransactions = async <T extends Transaction>(
 
 export const getUpcomingDebts = async (
   userId: string,
-  limitCount: number = 5,
+  limitCount: number = 20, // Increased default limit
   startAfterDoc: any = null,
 ): Promise<Debt[]> => {
   try {
-    const now = Timestamp.now();
+    console.log(`Fetching upcoming debts for user: ${userId}`);
+    
+    // Get the start of today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Create a query that gets all unpaid debts due today or in the future
     let q = query(
       collection(db, "users", userId, "debts"),
       where("paid", "==", false),
-      where("dueDate", ">=", now),
+      where("dueDate", ">=", Timestamp.fromDate(today)), // Changed to include today
       orderBy("dueDate", "asc"),
       limit(limitCount),
     );
@@ -409,14 +415,20 @@ export const getUpcomingDebts = async (
     }
 
     const querySnapshot = await getDocs(q);
+    console.log(`Found ${querySnapshot.docs.length} upcoming debts`);
 
-    return querySnapshot.docs.map(
-      (doc) =>
-        ({
+    const debts = querySnapshot.docs.map(
+      (doc) => {
+        const data = doc.data();
+        console.log(`Debt ${doc.id}:`, data);
+        return {
           id: doc.id,
-          ...doc.data(),
-        }) as Debt,
+          ...data,
+        } as Debt;
+      }
     );
+    
+    return debts;
   } catch (error) {
     console.error("Error getting upcoming debts:", error);
     throw error;
