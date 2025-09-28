@@ -58,7 +58,10 @@ export const UpcomingDebtsSection = ({
 
   if (loading) {
     return (
-      <div className={`animate-pulse bg-gray-100 rounded-lg p-6 ${className}`}>
+      <div 
+        data-testid="loading-skeleton"
+        className={`animate-pulse bg-gray-100 rounded-lg p-6 ${className}`}
+      >
         <div className="h-6 w-1/3 bg-gray-200 rounded mb-4"></div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
